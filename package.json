@@ -1,0 +1,35 @@
+{
+  "name": "vndb-server",
+  "version": "0.0.1",
+  "main": "../dist/generated,server.js",
+  "license": "MIT",
+  "scripts": {
+    "server": "nodemon"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.15.0",
+    "@babel/preset-env": "^7.15.0",
+    "babel-loader": "^8.2.2",
+    "dotenv": "^10.0.0",
+    "file-loader": "^6.2.0",
+    "nodemon": "^2.0.12",
+    "webpack": "^5.50.0",
+    "webpack-cli": "^4.7.2",
+    "webpack-dev-middleware": "^5.0.0",
+    "webpack-hot-middleware": "^2.25.0",
+    "webpack-node-externals": "^3.0.0"
+  },
+  "dependencies": {
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.5",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "express": "^4.17.1",
+    "express-jwt": "^6.1.0",
+    "helmet": "3.22",
+    "jsonwebtoken": "^8.5.1",
+    "lodash": "^4.17.21",
+    "node-fetch": "^2.6.1",
+    "pg": "^8.7.1"
+  }
+}

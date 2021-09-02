@@ -1,0 +1,10 @@
+/node_modules/
+/dist/
+/data/
+npm-debug.log
+.env
+
+/server/external-api/vndb/vndb.tags.dump.json
+
+/client/node_modules
+/.vscode

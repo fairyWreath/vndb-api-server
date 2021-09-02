@@ -3,8 +3,15 @@ import * as db from "../pg.pool";
 // get Vn details from vn id
 const getVnDetails = async (id) => {
   try {
-    const query = `SELECT id, olang, image, l_wikidata, c_votecount, c_popularity, c_rating, length, title, original, alias, l_renai, "desc", c_average
-    FROM vndb.vn WHERE id=$1;`;
+    const query = `SELECT vn.id, olang, image, l_wikidata, vn.c_votecount, c_popularity, c_rating, length, title, original, alias, l_renai, 
+    "desc", c_average,
+    ARRAY_AGG(image || ' ' || c_sexual_avg || ' ' || c_violence_avg) as image_data,
+    ARRAY_AGG(scr || ' ' || c_sexual_avg || ' ' || c_violence_avg) as screenshots_data
+    FROM vndb.vn 
+    INNER JOIN vndb.images ON vn.image = images.id
+    INNER JOIN vndb.vn_screenshots ON vn.id = vn_screenshots.id
+    WHERE vn.id=$1
+    GROUP BY vn.id`;
 
     const results = await db.query(query, [id]);
     return results;
@@ -82,7 +89,7 @@ const getVnRelations = async (vid) => {
 
 const getVnStaff = async (vid) => {
   try {
-    const query = `SELECT vn_staff.aid, role, staff_alias.id, name, original
+    const query = `SELECT vn_staff.aid, vn_staff.note, role, staff_alias.id, name, original
     FROM vndb.vn_staff
     INNER JOIN vndb.staff_alias ON vn_staff.aid = staff_alias.aid
     WHERE vn_staff.id=$1;`;
@@ -117,6 +124,34 @@ const getVnCharacters = async (vid) => {
   }
 };
 
+// get vn releases from vid
+const getVnReleases = async (vid) => {
+  try {
+    const query = `SELECT releases_vn.id,
+    minage, voiced, freeware, doujin, uncensored, official, title, releases.original, releases.website, releases.type, released,
+    ARRAY_AGG(releases_lang.lang) as languages,
+    ARRAY_AGG(platform) as platforms,
+    ARRAY_AGG(pid || '~' || developer || '~' || publisher || '~' || producers.name || '~' || producers.lang) as producers
+    FROM vndb.releases_vn
+    INNER JOIN vndb.releases ON releases_vn.id = releases.id
+    INNER JOIN vndb.releases_lang ON releases_vn.id = releases_lang.id
+    INNER JOIN vndb.releases_platforms ON releases_vn.id = releases_platforms.id
+    INNER JOIN vndb.releases_producers ON releases_vn.id = releases_producers.id
+    INNER JOIN vndb.producers ON releases_producers.pid = producers.id
+    WHERE releases_vn.vid = $1
+    GROUP BY releases_vn.id, minage, voiced, freeware, doujin, uncensored,
+    official, title, releases.original, releases.website, releases.type, released
+    ORDER BY released ASC`;
+
+    const results = await db.query(query, [vid]);
+    return results;
+  } catch (err) {
+    throw {
+      error: err,
+    };
+  }
+};
+
 export default {
   getVnDetails,
   getTagDetails,
@@ -125,4 +160,5 @@ export default {
   getVnRelations,
   getVnStaff,
   getVnCharacters,
+  getVnReleases,
 };

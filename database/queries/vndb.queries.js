@@ -1,4 +1,5 @@
 import * as db from "../pg.pool";
+import { advancedVnSearchQuery } from "./vndb.query.builder.mjs";
 
 // get Vn details from vn id
 const getVnDetails = async (id) => {
@@ -22,7 +23,7 @@ const getVnDetails = async (id) => {
   }
 };
 
-// get tag details from tag id
+// get tag details from tag id, need parent and VNS here
 const getTagDetails = async (id) => {
   try {
     const query = `SELECT id, cat, defaultspoil, searchable, applicable, name, description, alias
@@ -104,9 +105,10 @@ const getVnStaff = async (vid) => {
 };
 
 // can improve this for more complete character details
+// there are 4x duplicates in chars_vns, neeed to use DISTINC for now, will clean db later
 const getVnCharacters = async (vid) => {
   try {
-    const query = `SELECT vn_seiyuu.id , chars_vns.id, role, spoil,
+    const query = `SELECT DISTINCT vn_seiyuu.id , chars_vns.id, role, spoil,
     staff_alias.name as seiyuu_name, staff_alias.original as orig_seiyuu_name,
     chars.name, chars.gender, chars.image, chars.main_spoil
     FROM vndb.chars_vns
@@ -152,6 +154,19 @@ const getVnReleases = async (vid) => {
   }
 };
 
+const searchVn = async (params) => {
+  const { query, queryParams } = advancedVnSearchQuery(params);
+
+  try {
+    const results = await db.query(query, queryParams);
+    return results;
+  } catch (err) {
+    throw {
+      error: err,
+    };
+  }
+};
+
 export default {
   getVnDetails,
   getTagDetails,
@@ -161,4 +176,5 @@ export default {
   getVnStaff,
   getVnCharacters,
   getVnReleases,
+  searchVn,
 };

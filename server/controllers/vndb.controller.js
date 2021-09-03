@@ -6,7 +6,7 @@ import {
   getPublishersFromReleases,
 } from "../helpers/vndb.helpers";
 
-export const vnDetails = async (req, res) => {
+const vnDetails = async (req, res) => {
   try {
     const vid = req.params.vnId;
     const vns = await vndb.getVnDetails(vid);
@@ -73,7 +73,37 @@ const tagDetails = async (req, res) => {
   }
 };
 
+const vnSearch = async (req, res) => {
+  try {
+    // example param
+    // req.params = {
+    //   search: "haru-hen",
+    //   tags: ["g1986"],
+    //   nsfw: false,
+    //   sort_by: "max_released",
+    //   sort_order: "descending",
+    //   results: 15,
+    //   last_sort_value: 20210805,
+    //   // last_sort_vid: "v25920",
+    // };
+
+    const results = await vndb.searchVn(req.params);
+    const vns = results.rows.map((vn) => {
+      vn.image = parseImageData(vn.image);
+      return vn;
+    });
+
+    const response = {
+      items: vns,
+    };
+    return res.status(200).json(response);
+  } catch (err) {
+    return res.status(400).json(err);
+  }
+};
+
 export default {
   vnDetails,
   tagDetails,
+  vnSearch,
 };

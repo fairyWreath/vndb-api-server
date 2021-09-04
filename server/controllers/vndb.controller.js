@@ -6,6 +6,8 @@ import {
   getPublishersFromReleases,
 } from "../helpers/vndb.helpers";
 
+import queryString from "query-string";
+
 const vnDetails = async (req, res) => {
   try {
     const vid = req.params.vnId;
@@ -75,6 +77,28 @@ const tagDetails = async (req, res) => {
 
 const vnSearch = async (req, res) => {
   try {
+    // parse non-string queries to their respsective types
+    if (req.query.tags !== undefined && !Array.isArray(req.query.tags)) {
+      req.query.tags = [req.query.tags];
+    }
+
+    if (req.query.nsfw !== undefined) {
+      if (req.query.nsfw === "false") {
+        req.query.nsfw = false;
+      } else {
+        req.query.nsfw = true;
+      }
+    }
+
+    if (req.query.results !== undefined) {
+      req.query.results = parseInt(req.query.results);
+    }
+
+    if (req.query.last_sort_value !== undefined) {
+      req.query.last_sort_value = parseInt(req.query.last_sort_value);
+    }
+
+    console.log(req.query);
     // example param
     // req.params = {
     //   search: "haru-hen",
@@ -87,7 +111,7 @@ const vnSearch = async (req, res) => {
     //   // last_sort_vid: "v25920",
     // };
 
-    const results = await vndb.searchVn(req.params);
+    const results = await vndb.searchVn(req.query);
     const vns = results.rows.map((vn) => {
       vn.image = parseImageData(vn.image);
       return vn;

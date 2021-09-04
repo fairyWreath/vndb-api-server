@@ -157,6 +157,8 @@ const getVnReleases = async (vid) => {
 const searchVn = async (params) => {
   const { query, queryParams } = advancedVnSearchQuery(params);
 
+  console.log(query);
+
   try {
     const results = await db.query(query, queryParams);
     return results;

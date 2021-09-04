@@ -105,14 +105,11 @@ export const advancedVnSearchQuery = (params) => {
       v.title,
       v.id,
       v.image,
-      v.c_popularity,
+      v.c_popularity AS "popularity",
       Min(r.released)       AS "released",
       Min(cte.min_released) AS "min_released",
       Max(cte.max_released) AS "max_released",
-      c_rating
-      || ' ('
-      || v.c_votecount
-      || ')'                AS "rating",
+      c_rating              AS "rating",
     CASE
         WHEN v.length = 0 THEN 'Unknown'
         WHEN v.length = 1 THEN '< 2 hours'

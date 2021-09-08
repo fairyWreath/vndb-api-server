@@ -4,6 +4,8 @@ import {
   parseProducerData,
   getDevelopersFromReleases,
   getPublishersFromReleases,
+  getLanguagesFromReleases,
+  getPlatformsFromReleases,
 } from "../helpers/vndb.helpers";
 
 import queryString from "query-string";
@@ -37,9 +39,7 @@ const vnDetails = async (req, res) => {
     vn.relations = relations.rows;
     vn.releases = releases.rows;
 
-    // parse image array aggs
     vn.image = parseImageData(vn.image_data[0]);
-    delete vn.image_data;
     vn.screenshots = vn.screenshots_data.map((data) => parseImageData(data));
     delete vn.screenshots_data;
 
@@ -50,8 +50,29 @@ const vnDetails = async (req, res) => {
       );
     });
 
+    // trnasform lang/platforms into array
+    vn.releases.map((release) => {
+      const langSet = new Set();
+
+      const langs = release.languages
+        .substring(1, release.languages.length - 1)
+        .split(",");
+      langs.forEach((lang) => langSet.add(lang));
+
+      const plats = release.platforms
+        .substring(1, release.platforms.length - 1)
+        .split(",");
+
+      release.languages = Array.from(langSet);
+      release.platforms = plats;
+
+      return release;
+    });
+
     vn.developers = getDevelopersFromReleases(vn.releases);
     vn.publishers = getPublishersFromReleases(vn.releases);
+    vn.languages = getLanguagesFromReleases(vn.releases);
+    vn.platforms = getPlatformsFromReleases(vn.releases);
 
     const response = {
       item: vn,
@@ -98,18 +119,11 @@ const vnSearch = async (req, res) => {
       req.query.last_sort_value = parseInt(req.query.last_sort_value);
     }
 
+    if (req.query.released !== undefined) {
+      req.query.released = parseInt(req.query.released);
+    }
+
     console.log(req.query);
-    // example param
-    // req.params = {
-    //   search: "haru-hen",
-    //   tags: ["g1986"],
-    //   nsfw: false,
-    //   sort_by: "max_released",
-    //   sort_order: "descending",
-    //   results: 15,
-    //   last_sort_value: 20210805,
-    //   // last_sort_vid: "v25920",
-    // };
 
     const results = await vndb.searchVn(req.query);
     const vns = results.rows.map((vn) => {
@@ -126,8 +140,31 @@ const vnSearch = async (req, res) => {
   }
 };
 
+const charTraits = async (req, res) => {
+  if (req.query.cids === undefined)
+    return res.status(400).json({
+      error: "character ids not provided",
+    });
+
+  if (!Array.isArray(req.query.cids)) {
+    req.query.cids = [req.query.cids];
+  }
+
+  try {
+    const result = await vndb.getCharacterTraitsDetails(req.query.cids);
+    const response = {
+      items: result.rows,
+    };
+
+    return res.status(200).json(response);
+  } catch (err) {
+    return res.status(400).json(err);
+  }
+};
+
 export default {
   vnDetails,
   tagDetails,
   vnSearch,
+  charTraits,
 };

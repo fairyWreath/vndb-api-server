@@ -48,15 +48,6 @@ export const advancedVnSearchQuery = (params) => {
       r.released <= To_char(CURRENT_TIMESTAMP AT TIME zone 'UTC',
       'YYYYMMDD') ::integer `;
 
-  if (params.released !== undefined) {
-    query = query.concat(`
-    AND r.released >= $${currIndex} AND r.released < $${currIndex + 1}
-    `);
-    queryParams.push(params.releaed * 10000); // 4 0s for date format
-    queryParams.push((params.released + 1) * 10000);
-    currIndex += 2;
-  }
-
   if (params.search !== undefined) {
     query = query.concat(`
     AND (v.title ~* $${currIndex} OR r.title ~* $${currIndex} OR 
@@ -144,6 +135,15 @@ export const advancedVnSearchQuery = (params) => {
         AND img.c_sexual_avg = 0
       `);
     }
+  }
+
+  if (params.released !== undefined) {
+    query = query.concat(`
+    AND min_released >= $${currIndex} AND min_released < $${currIndex + 1}
+    `);
+    queryParams.push(params.released * 10000); // 4 0s for date format
+    queryParams.push((params.released + 1) * 10000);
+    currIndex += 2;
   }
 
   // cursor pagination

@@ -4,15 +4,26 @@ import { advancedVnSearchQuery } from "./vndb.query.builder.mjs";
 // get Vn details from vn id
 const getVnDetails = async (id) => {
   try {
-    const query = `SELECT vn.id, olang, image, l_wikidata, vn.c_votecount, c_popularity, c_rating, length, title, original, alias, l_renai, 
-    "desc", c_average,
-    ARRAY_AGG(image || ' ' || c_sexual_avg || ' ' || c_violence_avg) as image_data,
-    ARRAY_AGG(scr || ' ' || c_sexual_avg || ' ' || c_violence_avg) as screenshots_data
-    FROM vndb.vn 
-    INNER JOIN vndb.images ON vn.image = images.id
-    INNER JOIN vndb.vn_screenshots ON vn.id = vn_screenshots.id
-    WHERE vn.id=$1
-    GROUP BY vn.id`;
+    const query = `
+    with cte(min_released, vid) AS (
+      SELECT MIN(r.released) as min_released, rv.vid
+      FROM vndb.releases_vn rv
+      INNER JOIN vndb.releases r ON rv.id = r.id
+      WHERE rv.vid =$1
+      GROUP BY rv.vid
+    )
+    
+    SELECT vn.id, olang, image, l_wikidata, vn.c_votecount, c_popularity, c_rating, length, vn.title, 
+        vn.original, alias, l_renai, "desc", c_average, cte.min_released,
+        ARRAY_AGG(scr || ' ' || c_sexual_avg || ' ' || c_violence_avg) as screenshots_data,
+        ARRAY_AGG(image || ' ' || c_sexual_avg || ' ' || c_violence_avg) as image_data
+        FROM vndb.vn 
+          JOIN cte ON vn.id = cte.vid
+          INNER JOIN vndb.images ON vn.image = images.id
+          INNER JOIN vndb.vn_screenshots ON vn.id = vn_screenshots.id
+          GROUP BY vn.id, cte.min_released
+    
+    `;
 
     const results = await db.query(query, [id]);
     return results;
@@ -108,16 +119,50 @@ const getVnStaff = async (vid) => {
 // there are 4x duplicates in chars_vns, neeed to use DISTINC for now, will clean db later
 const getVnCharacters = async (vid) => {
   try {
-    const query = `SELECT DISTINCT vn_seiyuu.id , chars_vns.id, role, spoil,
+    const query = `
+    SELECT DISTINCT  vn_seiyuu.aid, chars_vns.id, role, spoil,
     staff_alias.name as seiyuu_name, staff_alias.original as orig_seiyuu_name,
     chars.name, chars.gender, chars.image, chars.main_spoil
     FROM vndb.chars_vns
-    INNER JOIN vndb.vn_seiyuu ON chars_vns.id = vn_seiyuu.cid AND chars_vns.vid = vn_seiyuu.id
-    INNER JOIN vndb.staff_alias ON vn_seiyuu.aid = staff_alias.aid
-    INNER JOIN vndb.chars ON chars_vns.id = chars.id
+	  INNER JOIN vndb.chars ON chars_vns.id = chars.id
+    LEFT JOIN vndb.vn_seiyuu ON chars_vns.id = vn_seiyuu.cid AND chars_vns.vid = vn_seiyuu.id 
+    LEFT JOIN vndb.staff_alias ON vn_seiyuu.aid = staff_alias.aid
     WHERE chars_vns.vid=$1`;
 
     const results = await db.query(query, [vid]);
+    return results;
+  } catch (err) {
+    throw {
+      error: err,
+    };
+  }
+};
+
+const getCharacterTraitsDetails = async (cids) => {
+  try {
+    let idx = 1;
+    const cidPlaceHolders = cids.map((cid) => {
+      return `$${idx++}`;
+    });
+
+    const query = `
+    SELECT 
+
+    c.image, c.gender, c.spoil_gender, c.bloodt, c.cup_size, c.main, 
+    c.s_bust, c.s_waist, c.s_hip, c.b_month, 
+    c.b_day, c.height, c.weight, c.main_spoil, c.age, c.name, c.original, c.alias, c."desc",
+
+    ARRAY_AGG(t.name || ' ' ||ct.spoil || ' ' ||  t.sexual || ' ' || t."group")
+
+    FROM vndb.chars_traits ct
+      INNER JOIN vndb.chars c ON c.id = ct.id
+      INNER JOIN vndb.traits t ON t.id = ct.tid
+      WHERE c.id IN (${cidPlaceHolders.join(",")})
+      
+    GROUP BY c.id
+    `;
+
+    const results = await db.query(query, cids);
     return results;
   } catch (err) {
     throw {
@@ -180,6 +225,7 @@ export default {
   getVnCharacters,
   getVnReleases,
   searchVn,
+  getCharacterTraitsDetails,
 };
 
 const queryfull = `
@@ -190,7 +236,7 @@ FROM vndb.releases_vn rv
 JOIN vndb.releases r ON r.id = rv.id
 JOIN vndb.releases_lang rl ON rl.id = r.id
 JOIN vndb.vn v ON v.id = rv.vid
---JOIN releases_producers rp ON rp.id = r.id
+// JOIN releases_producers rp ON rp.id = r.id
 WHERE
     r.released > 0 --"Released after"
     AND r.released <= to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYYMMDD')::INTEGER --"Released before". As is, checks if it's "Already released".

@@ -68,3 +68,23 @@ export const getPublishersFromReleases = (releases) => {
 
   return result;
 };
+
+export const getLanguagesFromReleases = (releases) => {
+  const langSet = new Set();
+
+  releases.forEach((release) => {
+    release.languages.forEach((lang) => langSet.add(lang));
+  });
+
+  return Array.from(langSet);
+};
+
+export const getPlatformsFromReleases = (releases) => {
+  const platSet = new Set();
+
+  releases.forEach((release) => {
+    release.platforms.forEach((plat) => platSet.add(plat));
+  });
+
+  return Array.from(platSet);
+};

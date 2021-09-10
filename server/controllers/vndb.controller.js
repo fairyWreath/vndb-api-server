@@ -8,8 +8,6 @@ import {
   getPlatformsFromReleases,
 } from "../helpers/vndb.helpers";
 
-import queryString from "query-string";
-
 const vnDetails = async (req, res) => {
   try {
     const vid = req.params.vnId;
@@ -123,8 +121,6 @@ const vnSearch = async (req, res) => {
     if (req.query.released !== undefined) {
       req.query.released = parseInt(req.query.released);
     }
-
-    console.log(req.query);
 
     const results = await vndb.searchVn(req.query);
     const vns = results.rows.map((vn) => {

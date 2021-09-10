@@ -29,4 +29,4 @@ var options = {
 
 const server = https.createServer(options, app);
 
-export default server;
+export default app;

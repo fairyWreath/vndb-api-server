@@ -1,13 +1,12 @@
 import express from "express";
+import https from "https";
 import cookieParser from "cookie-parser";
 import compress from "compression";
 import cors from "cors";
 import helmet from "helmet";
+import fs from "fs";
 
 import vndbRoutes from "./routes/vndb.routes";
-
-// import PgPool from "../database/pg.pool";
-
 const app = express();
 
 app.use(express.json({ limit: "20mb" }));
@@ -23,4 +22,11 @@ app.get("/", (req, res) => {
   return "<div>I loge Hitagi</div>";
 });
 
-export default app;
+var options = {
+  key: fs.readFileSync("server.key"),
+  cert: fs.readFileSync("server.crt"),
+};
+
+const server = https.createServer(options, app);
+
+export default server;

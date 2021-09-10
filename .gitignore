@@ -8,3 +8,6 @@ npm-debug.log
 
 /client/node_modules
 /.vscode
+server.crt
+server.key
+keytmp.pem

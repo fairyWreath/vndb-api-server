@@ -51,12 +51,16 @@ const getTagDetails = async (id) => {
 
 const getVnTags = async (vid) => {
   try {
-    const query = `SELECT tag, AVG(vote) AS score, AVG(spoiler) AS spoiler, name, parent
+    const query = `SELECT tag, AVG(vote) AS score, COUNT(tags_vn) as num_votes, AVG(spoiler) AS spoiler, name, parent
     FROM vndb.tags_vn 
     INNER JOIN vndb.tags  ON tags_vn.tag = tags.id
     INNER JOIN vndb.tags_parents ON tags.id = tags_parents.id
-    WHERE tags_vn.vid=$1 AND tags_parents.main = true
-    GROUP BY tag, name, parent ORDER BY AVG(vote) DESC;`;
+    WHERE tags_vn.vid=$1
+    AND tags_parents.main = true
+    GROUP BY tag, name, parent
+  	ORDER BY num_votes DESC`;
+
+    // GROUP BY tag, name, parent ORDER BY AVG(vote) DESC;`;
 
     const results = await db.query(query, [vid]);
     return results;

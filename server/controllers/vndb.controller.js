@@ -26,6 +26,7 @@ const vnDetails = async (req, res) => {
     // node pg returns numeric as strings
     vn.tags = tags.rows.map((tag) => {
       tag.score = parseFloat(tag.score);
+      tag.spoiler = parseFloat(tag.spoiler);
       return tag;
     });
 

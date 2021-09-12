@@ -128,6 +128,9 @@ export const advancedVnSearchQuery = (params) => {
       Min(cte.min_released) AS "min_released",
       Max(cte.max_released) AS "max_released",
       c_rating              AS "rating",
+      ARRAY_AGG(DISTINCT CONCAT(prod.name)) AS producers,
+      ARRAY_AGG(rl.lang ORDER BY r.released) as languages,
+      ARRAY_AGG(rplat.platform ORDER BY r.released) AS platforms, 
     CASE
         WHEN v.length = 0 THEN 'Unknown'
         WHEN v.length = 1 THEN '< 2 hours'
@@ -145,8 +148,22 @@ export const advancedVnSearchQuery = (params) => {
       ON v.id = rv.vid
     JOIN cte
       ON cte.vid = v.id
-    JOIN vndb.images img
+    
+      JOIN vndb.images img
       ON v.image = img.id -- nsfw/viol FLAGGING
+
+    LEFT JOIN (
+        SELECT p.name, rp.id as rid
+        FROM vndb.releases_producers rp 
+          JOIN vndb.producers p ON p.id = rp.pid
+        WHERE rp.developer = true AND rp.publisher = true
+      ) prod ON prod.rid = r.id
+
+    	LEFT JOIN (
+        select rpl.platform, rpl.id as rid
+        FROM  vndb.releases_platforms rpl
+      ) rplat ON rplat.rid = r.id
+
   WHERE 1 = 1
   `);
 

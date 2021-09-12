@@ -1,3 +1,4 @@
+import set from "lodash.set";
 import vndb from "../../database/queries/vndb.queries";
 import {
   parseImageData,
@@ -153,8 +154,30 @@ const vnSearch = async (req, res) => {
     }
 
     const results = await vndb.searchVn(req.query);
+
     const vns = results.rows.map((vn) => {
       vn.image = parseImageData(vn.image);
+
+      vn.producers = vn.producers.filter((prod) => {
+        return prod !== "";
+      });
+
+      const langs = vn.languages
+        .substring(1, vn.languages.length - 1)
+        .split(",")
+        .filter((lang) => {
+          return lang !== "";
+        });
+      vn.languages = Array.from(new Set(langs));
+
+      const plats = vn.platforms
+        .substring(1, vn.platforms.length - 1)
+        .split(",")
+        .filter((plat) => {
+          return plat !== "";
+        });
+      vn.platforms = Array.from(new Set(plats));
+
       return vn;
     });
 

@@ -61,6 +61,7 @@ export const getPublishersFromReleases = (releases) => {
           id: producer.id,
           name: producer.name,
           languages: release.languages,
+          official: release.official,
         });
       }
     });

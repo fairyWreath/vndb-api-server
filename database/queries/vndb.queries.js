@@ -177,22 +177,27 @@ const getCharacterTraitsDetails = async (cids) => {
 
 // get vn releases from vid
 const getVnReleases = async (vid) => {
+  // mrt = catridge
   try {
-    const query = `SELECT releases_vn.id,
-    minage, voiced, freeware, doujin, uncensored, official, title, releases.original, releases.website, releases.type, released,
+    const query = `
+    SELECT releases_vn.id,
+    minage, voiced, freeware, doujin, uncensored, official, title, ani_story,
+    releases.original, releases.website, releases.type, released,
     ARRAY_AGG(releases_lang.lang) as languages,
     ARRAY_AGG(platform) as platforms,
+	ARRAY_AGG(medium) as mediums,
     ARRAY_AGG(pid || '~' || developer || '~' || publisher || '~' || producers.name || '~' || producers.lang) as producers
     FROM vndb.releases_vn
     INNER JOIN vndb.releases ON releases_vn.id = releases.id
     INNER JOIN vndb.releases_lang ON releases_vn.id = releases_lang.id
+	LEFT JOIN vndb.releases_media ON releases.id = releases_media.id
     INNER JOIN vndb.releases_platforms ON releases_vn.id = releases_platforms.id
     INNER JOIN vndb.releases_producers ON releases_vn.id = releases_producers.id
     INNER JOIN vndb.producers ON releases_producers.pid = producers.id
     WHERE releases_vn.vid = $1
-    GROUP BY releases_vn.id, minage, voiced, freeware, doujin, uncensored,
-    official, title, releases.original, releases.website, releases.type, released
-    ORDER BY released ASC`;
+    GROUP BY releases_vn.id, releases.id
+    ORDER BY released ASC
+    `;
 
     const results = await db.query(query, [vid]);
     return results;

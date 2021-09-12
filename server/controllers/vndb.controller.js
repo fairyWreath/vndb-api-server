@@ -47,23 +47,26 @@ const vnDetails = async (req, res) => {
       release.producers = release.producers.map((data) =>
         parseProducerData(data)
       );
+      release.mediums = Array.from(
+        new Set(
+          release.mediums.substring(1, release.mediums.length - 1).split(",")
+        )
+      );
+      // release.platforms = Array.from(new Set(release.platforms));
     });
 
     // trnasform lang/platforms into array
     vn.releases.map((release) => {
-      const langSet = new Set();
-
       const langs = release.languages
         .substring(1, release.languages.length - 1)
         .split(",");
-      langs.forEach((lang) => langSet.add(lang));
 
       const plats = release.platforms
         .substring(1, release.platforms.length - 1)
         .split(",");
 
-      release.languages = Array.from(langSet);
-      release.platforms = plats;
+      release.languages = Array.from(new Set(langs));
+      release.platforms = Array.from(new Set(plats));
 
       return release;
     });

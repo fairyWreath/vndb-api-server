@@ -20,9 +20,16 @@ const vnDetails = async (req, res) => {
     const relations = await vndb.getVnRelations(vid);
     const releases = await vndb.getVnReleases(vid);
 
+    if (vns.rows.length === 0) {
+      throw {
+        error: `No Visual Novel with id ${vid} found`,
+      };
+    }
     const vn = vns.rows[0];
 
-    vn.screenshots_data = scr_data.rows[0].screenshots_data;
+    if (scr_data.rows.length > 0) {
+      vn.screenshots_data = scr_data.rows[0].screenshots_data;
+    }
 
     // node pg returns numeric as strings
     vn.tags = tags.rows.map((tag) => {
@@ -42,7 +49,11 @@ const vnDetails = async (req, res) => {
     vn.releases = releases.rows;
 
     vn.image = parseImageData(vn.image_data[0]);
-    vn.screenshots = vn.screenshots_data.map((data) => parseImageData(data));
+    if (vn.screenshots_data !== undefined) {
+      vn.screenshots = vn.screenshots_data.map((data) => parseImageData(data));
+    } else {
+      vn.screenshots = [];
+    }
     delete vn.screenshots_data;
 
     // parse producer data

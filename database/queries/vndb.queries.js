@@ -5,25 +5,37 @@ import { advancedVnSearchQuery } from "./vndb.query.builder.mjs";
 const getVnDetails = async (id) => {
   try {
     const query = `
-    with cte(min_released, vid) AS (
-      SELECT MIN(r.released) as min_released, rv.vid
-      FROM vndb.releases_vn rv
-      INNER JOIN vndb.releases r ON rv.id = r.id
-      WHERE rv.vid =$1
-      GROUP BY rv.vid
-    )
-    
-    SELECT vn.id, olang, image, l_wikidata, vn.c_votecount, c_popularity, c_rating, length, vn.title, 
-        vn.original, alias, l_renai, "desc", c_average, cte.min_released,
-        ARRAY_AGG(scr || ' ' || c_sexual_avg || ' ' || c_violence_avg) as screenshots_data,
-        ARRAY_AGG(image || ' ' || c_sexual_avg || ' ' || c_violence_avg) as image_data
-        FROM vndb.vn 
-          JOIN cte ON vn.id = cte.vid
-          INNER JOIN vndb.images ON vn.image = images.id
-          INNER JOIN vndb.vn_screenshots ON vn.id = vn_screenshots.id
-          GROUP BY vn.id, cte.min_released
-    
-    `;
+    WITH CTE(MIN_RELEASED,
+
+      VID) AS
+    (SELECT MIN(R.RELEASED) AS MIN_RELEASED,
+    RV.VID
+    FROM VNDB.RELEASES_VN RV
+    INNER JOIN VNDB.RELEASES R ON RV.ID = R.ID
+    WHERE RV.VID = $1
+    GROUP BY RV.VID)
+    SELECT VN.ID,
+    OLANG,
+    IMAGE,
+    L_WIKIDATA,
+    VN.C_VOTECOUNT,
+    C_POPULARITY,
+    C_RATING,
+    LENGTH,
+    VN.TITLE,
+    VN.ORIGINAL,
+    ALIAS,
+    L_RENAI,
+    "desc",
+    C_AVERAGE,
+    CTE.MIN_RELEASED,
+    ARRAY_AGG(IMAGE || ' ' || IMAGES.C_SEXUAL_AVG || ' ' || IMAGES.C_VIOLENCE_AVG) AS IMAGE_DATA
+    FROM VNDB.VN
+    JOIN CTE ON VN.ID = CTE.VID
+    INNER JOIN VNDB.VN_SCREENSHOTS ON VN.ID = VN_SCREENSHOTS.ID
+    INNER JOIN VNDB.IMAGES ON IMAGES.ID = IMAGE
+    GROUP BY VN.ID, CTE.MIN_RELEASED
+`;
 
     const results = await db.query(query, [id]);
     return results;
@@ -41,6 +53,26 @@ const getTagDetails = async (id) => {
     FROM vndb.tags WHERE id=$1;`;
 
     const results = await db.query(query, [id]);
+    return results;
+  } catch (err) {
+    throw {
+      error: err,
+    };
+  }
+};
+
+const getVnScreenshotData = async (vid) => {
+  try {
+    const query = `
+    SELECT 
+    ARRAY_AGG(SCR || ' ' || IMAGES.C_SEXUAL_AVG || ' ' || IMAGES.C_VIOLENCE_AVG) AS SCREENSHOTS_DATA
+    FROM VNDB.VN
+    INNER JOIN VNDB.VN_SCREENSHOTS ON VN.ID = VN_SCREENSHOTS.ID
+    INNER JOIN VNDB.IMAGES ON VN_SCREENSHOTS.SCR = IMAGES.ID
+  	WHERE vn.id = $1
+    GROUP BY VN.ID`;
+
+    const results = await db.query(query, [vid]);
     return results;
   } catch (err) {
     throw {
@@ -211,6 +243,9 @@ const getVnReleases = async (vid) => {
 const searchVn = async (params) => {
   const { query, queryParams } = advancedVnSearchQuery(params);
 
+  // console.log(query);
+  // console.log(queryParams);
+
   try {
     const results = await db.query(query, queryParams);
     return results;
@@ -224,6 +259,7 @@ const searchVn = async (params) => {
 export default {
   getVnDetails,
   getTagDetails,
+  getVnScreenshotData,
   getVnTags,
   getVnLength,
   getVnRelations,

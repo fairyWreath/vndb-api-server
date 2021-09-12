@@ -42,6 +42,7 @@ export const advancedVnSearchQuery = (params) => {
   FROM vndb.releases_vn rv
   JOIN vndb.releases r ON r.id = rv.id
   JOIN vndb.releases_lang rl ON rl.id = r.id
+  JOIN vndb.releases_platforms rpl ON rpl.id = rv.id
   JOIN vndb.vn v ON v.id = rv.vid
   --JOIN releases_producers rp ON rp.id = r.id
   WHERE
@@ -56,6 +57,36 @@ export const advancedVnSearchQuery = (params) => {
     queryParams.push(params.search);
     currIndex++;
   }
+  //	  AND rpl.platform = 'psp'
+  if (params.languages !== undefined) {
+    query = query.concat(`
+    AND rl.lang IN (
+    `);
+
+    params.languages.forEach((lang, idx) => {
+      if (idx > 0) query = query.concat(` , `);
+      query = query.concat(` $${currIndex} `);
+      currIndex++;
+      queryParams.push(lang);
+    });
+
+    query = query.concat(` ) `);
+  }
+
+  if (params.platforms !== undefined) {
+    query = query.concat(`
+    AND rpl.platform IN (
+    `);
+
+    params.platforms.forEach((plat, idx) => {
+      if (idx > 0) query = query.concat(` , `);
+      query = query.concat(` $${currIndex} `);
+      currIndex++;
+      queryParams.push(plat);
+    });
+
+    query = query.concat(` ) `);
+  }
 
   if (params.tags !== undefined) {
     query = query.concat(`
@@ -65,7 +96,6 @@ export const advancedVnSearchQuery = (params) => {
           FROM vndb.vn v
     `);
 
-    // parent only for now
     params.tags.forEach((tagid) => {
       query = query.concat(`
       INTERSECT
@@ -74,15 +104,6 @@ export const advancedVnSearchQuery = (params) => {
       WHERE (tvi.tag = $${currIndex} OR tvi.tag IN (SELECT vndb.get_child_tags($${currIndex})))
           AND tvi.rating >= 2
       `);
-      // query = query.concat(`
-      //   INTERSECT
-      //   SELECT v.id
-      //   FROM vndb.tags_vn tv
-      //   JOIN vndb.vn v ON v.id = tv.vid
-      //   WHERE tv.tag = $${currIndex}
-      //   GROUP BY v.id
-      //   HAVING avg(tv.vote) >= 2
-      // `);
       currIndex++;
       queryParams.push(tagid);
     });

@@ -12,6 +12,7 @@ const vnDetails = async (req, res) => {
   try {
     const vid = req.params.vnId;
     const vns = await vndb.getVnDetails(vid);
+    const scr_data = await vndb.getVnScreenshotData(vid);
     const tags = await vndb.getVnTags(vid);
     const play_time = await vndb.getVnLength(vid);
     const staff = await vndb.getVnStaff(vid);
@@ -20,6 +21,8 @@ const vnDetails = async (req, res) => {
     const releases = await vndb.getVnReleases(vid);
 
     const vn = vns.rows[0];
+
+    vn.screenshots_data = scr_data.rows[0].screenshots_data;
 
     // node pg returns numeric as strings
     vn.tags = tags.rows.map((tag) => {
@@ -52,7 +55,6 @@ const vnDetails = async (req, res) => {
           release.mediums.substring(1, release.mediums.length - 1).split(",")
         )
       );
-      // release.platforms = Array.from(new Set(release.platforms));
     });
 
     // trnasform lang/platforms into array
@@ -103,6 +105,20 @@ const vnSearch = async (req, res) => {
     // parse non-string queries to their respsective types
     if (req.query.tags !== undefined && !Array.isArray(req.query.tags)) {
       req.query.tags = [req.query.tags];
+    }
+
+    if (
+      req.query.languages !== undefined &&
+      !Array.isArray(req.query.languages)
+    ) {
+      req.query.languages = [req.query.languages];
+    }
+
+    if (
+      req.query.platforms !== undefined &&
+      !Array.isArray(req.query.platforms)
+    ) {
+      req.query.platforms = [req.query.platforms];
     }
 
     if (req.query.nsfw !== undefined) {
